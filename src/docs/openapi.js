@@ -1,6 +1,3 @@
-// Hand-written OpenAPI 3 spec. Kept in one file (not scattered across route
-// comments) so the whole API contract can be reviewed at a glance, and so it
-// can be checked against the real routes by tests/openapi.test.js.
 
 const ref = (name) => ({ $ref: `#/components/schemas/${name}` });
 const jsonBody = (schema, required = true) => ({ required, content: { 'application/json': { schema } } });

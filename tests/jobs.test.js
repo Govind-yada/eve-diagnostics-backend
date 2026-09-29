@@ -9,7 +9,6 @@ const { processStoredEvent } = require('../src/services/webhookService');
 
 const HOUR = 60 * 60 * 1000;
 const oid = (id) => new mongoose.Types.ObjectId(String(id));
-// Raw-collection update so we can backdate timestamps that Mongoose would otherwise overwrite.
 const backdate = (Model, id, field, ms) =>
   Model.collection.updateOne({ _id: oid(id) }, { $set: { [field]: new Date(Date.now() - ms) } });
 const backdateEvent = (eventId, ms) =>
@@ -121,14 +120,13 @@ describe('Webhook server-side retry handling (queue available)', () => {
     jest.spyOn(jobs, 'enqueueWebhookRetry').mockResolvedValue(true);
     await hook({ eventId: 'evt_q2', providerTransactionId: 'sim_later', status: 'SUCCESS' });
 
-    // The payment row "appears" (the race that made the first attempt fail).
     const { token } = await registerAndLogin();
     const { test } = await createCentreWithTest();
     const b = await createBooking(token, test._id);
     const bookingId = b.body.data.booking._id;
     await Payment.create({ booking: bookingId, amount: 500, status: 'PENDING', providerTransactionId: 'sim_later' });
 
-    await processStoredEvent('evt_q2'); // what the BullMQ worker runs on each attempt
+    await processStoredEvent('evt_q2');
 
     expect((await WebhookEvent.findOne({ eventId: 'evt_q2' })).status).toBe('PROCESSED');
     expect((await Booking.findById(bookingId)).status).toBe('CONFIRMED');
@@ -150,7 +148,6 @@ describe('Webhook server-side retry handling (queue available)', () => {
   test('a STALE unfinished event is taken over by a provider redelivery and applied', async () => {
     jest.spyOn(jobs, 'enqueueWebhookRetry').mockResolvedValue(true);
     const { bookingId, payment } = await pendingPayment();
-    // Event was recorded as failed earlier, its retry job got lost, and time passed.
     await WebhookEvent.create({
       eventId: 'evt_stale', status: 'FAILED', attempts: 1, lastError: 'transient',
       payload: { eventId: 'evt_stale', providerTransactionId: payment.providerTransactionId, status: 'SUCCESS' },

@@ -11,9 +11,7 @@ const PORT = process.env.PORT || 5000;
 async function start() {
   try {
     await connectDB(process.env.MONGO_URI);
-    await initRedis(); // optional: enables caching when REDIS_URL is set
-    // Workers run inside the API process by default; set RUN_JOBS_IN_API=false
-    // and run `npm run worker` as a separate process to scale them independently.
+    await initRedis();
     if (process.env.RUN_JOBS_IN_API !== 'false') await startJobs();
 
     const server = app.listen(PORT, () => {
@@ -23,9 +21,9 @@ async function start() {
     const shutdown = async (signal) => {
       logger.info(`${signal} received, shutting down gracefully...`);
       server.close(async () => {
-        await stopJobs().catch(() => {});
-        await closeRedis().catch(() => {});
-        await mongoose.disconnect().catch(() => {});
+        await stopJobs().catch(() => { });
+        await closeRedis().catch(() => { });
+        await mongoose.disconnect().catch(() => { });
         process.exit(0);
       });
     };

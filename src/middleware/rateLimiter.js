@@ -1,6 +1,5 @@
 const rateLimit = require('express-rate-limit');
 
-// Tighter limit on auth endpoints to slow down credential-stuffing / brute force.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,

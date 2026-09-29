@@ -5,25 +5,13 @@ const WebhookEvent = require('../models/WebhookEvent');
 const { finalizePayment } = require('../services/paymentService');
 const { processStoredEvent, markDead } = require('../services/webhookService');
 
-/**
- * Periodic safety net for things that get stuck when a webhook is dropped,
- * a job is lost, or a process dies mid-request. Everything it does goes
- * through the same idempotent paths as normal traffic, so running it twice
- * (or concurrently with live traffic) is harmless.
- *
- *  1. Payments PENDING longer than PAYMENT_TIMEOUT_MINUTES  -> FAILED (booking -> FAILED, user may retry)
- *  2. PENDING bookings whose appointment time has passed and
- *     that have no payment in flight                        -> CANCELLED (expired)
- *  3. Webhook events left RECEIVED/FAILED past the stale threshold -> re-processed,
- *     or dead-lettered once they exceed the retry budget.
- */
+
 async function reconcile(now = new Date()) {
   const paymentTimeoutMs = Number(process.env.PAYMENT_TIMEOUT_MINUTES || 15) * 60 * 1000;
   const staleMs = Number(process.env.WEBHOOK_STALE_SECONDS || 60) * 1000;
   const maxAttempts = Number(process.env.WEBHOOK_RETRY_ATTEMPTS || 5);
   const summary = { paymentsTimedOut: 0, bookingsExpired: 0, eventsReprocessed: 0, eventsDeadLettered: 0 };
 
-  // 1. stale pending payments
   const stalePayments = await Payment.find({
     status: Payment.STATUS.PENDING,
     createdAt: { $lt: new Date(now.getTime() - paymentTimeoutMs) },
@@ -33,7 +21,6 @@ async function reconcile(now = new Date()) {
     if (!result.alreadyFinalized) summary.paymentsTimedOut += 1;
   }
 
-  // 2. expired unpaid bookings
   const expiredCandidates = await Booking.find({
     status: Booking.STATUS.PENDING,
     appointmentDate: { $lt: now },
@@ -47,7 +34,7 @@ async function reconcile(now = new Date()) {
     summary.bookingsExpired += res.modifiedCount;
   }
 
-  // 3. stuck webhook events
+
   const staleEvents = await WebhookEvent.find({
     status: { $in: [WebhookEvent.STATUS.RECEIVED, WebhookEvent.STATUS.FAILED] },
     updatedAt: { $lt: new Date(now.getTime() - staleMs) },

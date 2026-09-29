@@ -1,5 +1,4 @@
-// Standalone background-worker process: `npm run worker`
-// Use together with RUN_JOBS_IN_API=false on the API to run jobs separately.
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
@@ -17,9 +16,9 @@ async function main() {
 
   const shutdown = async (signal) => {
     logger.info(`${signal} received, stopping worker...`);
-    await stopJobs().catch(() => {});
-    await closeRedis().catch(() => {});
-    await mongoose.disconnect().catch(() => {});
+    await stopJobs().catch(() => { });
+    await closeRedis().catch(() => { });
+    await mongoose.disconnect().catch(() => { });
     process.exit(0);
   };
   process.on('SIGINT', () => shutdown('SIGINT'));

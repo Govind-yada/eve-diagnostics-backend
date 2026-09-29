@@ -2,7 +2,6 @@ jest.mock('../../src/config/redis');
 const redisConfig = require('../../src/config/redis');
 const cache = require('../../src/utils/cache');
 
-// Minimal in-memory stand-in for the ioredis calls the cache helper uses.
 function fakeRedis() {
   const store = new Map();
   return {
@@ -18,7 +17,6 @@ function fakeRedis() {
   };
 }
 
-// A client whose every command fails, like a Redis outage.
 const brokenRedis = () => {
   const boom = async () => { throw new Error('Stream isn\'t writeable'); };
   return { get: boom, set: boom, exists: boom, scan: boom, del: boom };

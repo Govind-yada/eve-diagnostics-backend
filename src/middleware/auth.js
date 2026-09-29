@@ -26,7 +26,6 @@ const protect = asyncHandler(async (req, res, next) => {
   next();
 });
 
-// Usage: router.get('/admin-only', protect, authorize('admin'), handler)
 const authorize = (...roles) => (req, res, next) => {
   if (!req.user || !roles.includes(req.user.role)) {
     throw new ApiError(403, 'Forbidden — you do not have permission to perform this action');

@@ -118,16 +118,13 @@ describe('Payment webhook — idempotency (core requirement)', () => {
     expect(second.status).toBe(200);
     expect(third.status).toBe(200);
 
-    // Only one WebhookEvent should have been persisted for this eventId.
     const events = await WebhookEvent.find({ eventId: 'evt_replay' });
     expect(events).toHaveLength(1);
 
-    // Only one Payment should exist and it should be SUCCESS exactly once.
     const payments = await Payment.find({ providerTransactionId });
     expect(payments).toHaveLength(1);
     expect(payments[0].status).toBe('SUCCESS');
 
-    // Booking should be CONFIRMED, not corrupted by repeated processing.
     const booking = await Booking.findById(bookingId);
     expect(booking.status).toBe('CONFIRMED');
   });
@@ -135,13 +132,10 @@ describe('Payment webhook — idempotency (core requirement)', () => {
   test('a webhook cannot override a booking that was already finalized differently', async () => {
     const { bookingId, providerTransactionId } = await setupPendingPayment();
 
-    // First event confirms it.
     await request(app)
       .post('/api/payments/webhook')
       .send({ eventId: 'evt_a', providerTransactionId, status: 'SUCCESS' });
 
-    // A conflicting event (different eventId, same transaction) arrives —
-    // e.g. a provider bug. Our Payment-level PENDING guard prevents flip-flop.
     const res = await request(app)
       .post('/api/payments/webhook')
       .send({ eventId: 'evt_b', providerTransactionId, status: 'FAILED' });
@@ -171,12 +165,10 @@ describe('Payment webhook — idempotency (core requirement)', () => {
   test('a failed webhook does not burn the eventId: the provider retry is still processed', async () => {
     const payload = { eventId: 'evt_early', providerTransactionId: 'sim_not_created_yet', status: 'SUCCESS' };
 
-    // Event arrives before the payment exists -> 404, and must NOT be remembered as "processed".
     const first = await request(app).post('/api/payments/webhook').send(payload);
     expect(first.status).toBe(404);
     expect(await WebhookEvent.countDocuments({ eventId: 'evt_early' })).toBe(0);
 
-    // Payment now exists; the provider retries the SAME eventId and it must be applied.
     const { bookingId, providerTransactionId } = await setupPendingPayment();
     const retry = await request(app)
       .post('/api/payments/webhook')
@@ -188,7 +180,6 @@ describe('Payment webhook — idempotency (core requirement)', () => {
   test('a retry heals a half-applied event (payment finalized but booking left PENDING)', async () => {
     const { bookingId, providerTransactionId } = await setupPendingPayment();
 
-    // Simulate a crash between the Payment update and the Booking update.
     await Payment.updateOne({ providerTransactionId }, { status: 'SUCCESS' });
     expect((await Booking.findById(bookingId)).status).toBe('PENDING');
 

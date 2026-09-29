@@ -1,5 +1,4 @@
-// END-TO-END test of the background jobs: real Redis, real BullMQ workers.
-// Skipped automatically unless REDIS_TEST_URL is set.
+
 const { app, request, registerAndLogin, createCentreWithTest, createBooking } = require('./helpers');
 const { getRedis, initRedis, closeRedis } = require('../src/config/redis');
 const { startJobs, stopJobs } = require('../src/jobs');
@@ -12,7 +11,7 @@ const describeRedis = process.env.REDIS_TEST_URL ? describe : describe.skip;
 
 async function waitFor(check, timeoutMs = 15000, stepMs = 100) {
   const deadline = Date.now() + timeoutMs;
-  for (;;) {
+  for (; ;) {
     const v = await check();
     if (v) return v;
     if (Date.now() > deadline) throw new Error('waitFor timed out');
@@ -49,16 +48,14 @@ describeRedis('Background jobs (real Redis + BullMQ)', () => {
     const body = { eventId: 'evt_e2e_ok', providerTransactionId: 'sim_e2e_late', status: 'SUCCESS' };
 
     const first = await request(app).post('/api/payments/webhook').send(body);
-    expect(first.status).toBe(202); // accepted; retry scheduled — provider does not have to retry
+    expect(first.status).toBe(202);
 
-    // The payment row now appears (the commit-ordering race that caused the failure).
     const { token } = await registerAndLogin();
     const { test } = await createCentreWithTest();
     const b = await createBooking(token, test._id);
     const bookingId = b.body.data.booking._id;
     await Payment.create({ booking: bookingId, amount: 500, status: 'PENDING', providerTransactionId: 'sim_e2e_late' });
 
-    // Nobody calls the webhook again — the BullMQ worker must finish the job on its own.
     await waitFor(async () => (await Booking.findById(bookingId)).status === 'CONFIRMED');
     const ev = await WebhookEvent.findOne({ eventId: 'evt_e2e_ok' });
     expect(ev.status).toBe('PROCESSED');
@@ -77,7 +74,6 @@ describeRedis('Background jobs (real Redis + BullMQ)', () => {
     expect(ev.lastError).toMatch(/No payment found/);
     expect(ev.attempts).toBeGreaterThanOrEqual(3);
 
-    // Redelivery of a dead-lettered event is acknowledged and never re-applied.
     const again = await request(app).post('/api/payments/webhook')
       .send({ eventId: 'evt_e2e_dead', providerTransactionId: 'sim_never_exists', status: 'SUCCESS' });
     expect(again.status).toBe(200);
@@ -97,7 +93,7 @@ describeRedis('Background jobs (real Redis + BullMQ)', () => {
   test('the repeating reconciliation job is registered exactly once', async () => {
     const schedulers = await getQueues().maintenance.getJobSchedulers();
     expect(schedulers.filter((s) => s.key === 'reconcile-schedule' || s.id === 'reconcile-schedule')).toHaveLength(1);
-    await startJobs().catch(() => {}); // starting again must not duplicate the schedule
+    await startJobs().catch(() => { });
     const after = await getQueues().maintenance.getJobSchedulers();
     expect(after.filter((s) => s.key === 'reconcile-schedule' || s.id === 'reconcile-schedule')).toHaveLength(1);
   });

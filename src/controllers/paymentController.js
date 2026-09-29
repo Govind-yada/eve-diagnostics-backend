@@ -8,11 +8,6 @@ const { receiveWebhook } = require('../services/webhookService');
 
 const SUCCESS_RATE = () => Number(process.env.PAYMENT_SUCCESS_RATE ?? 0.8);
 
-// POST /api/payments/
-// Simulates initiating payment for a booking. By default it resolves
-// synchronously (as the assignment describes). Pass `{ async: true }` to
-// instead leave the payment PENDING, mimicking a real gateway that reports
-// the final outcome later via POST /payments/webhook/.
 const initiatePayment = asyncHandler(async (req, res) => {
   const { bookingId, async: simulateAsync } = req.body;
 
@@ -39,9 +34,7 @@ const initiatePayment = asyncHandler(async (req, res) => {
   });
 
   if (simulateAsync) {
-    // Leave it PENDING — a later call to /payments/webhook/ with this
-    // payment's providerTransactionId will finalize it (or the reconciliation
-    // job times it out if no webhook ever arrives).
+
     return res.status(202).json({
       success: true,
       message: 'Payment initiated and pending confirmation via webhook',
@@ -49,7 +42,6 @@ const initiatePayment = asyncHandler(async (req, res) => {
     });
   }
 
-  // Synchronous simulation: resolve the outcome immediately, right now.
   const outcome = Math.random() < SUCCESS_RATE() ? Payment.STATUS.SUCCESS : Payment.STATUS.FAILED;
   const result = await finalizePayment(payment._id, outcome);
 
@@ -63,9 +55,6 @@ const initiatePayment = asyncHandler(async (req, res) => {
   });
 });
 
-// POST /api/payments/webhook/
-// Called by the (simulated) payment provider to report a final payment
-// status out-of-band. Idempotent — see services/webhookService.js.
 const paymentWebhook = asyncHandler(async (req, res) => {
   const { eventId, providerTransactionId, status } = req.body;
   const outcome = await receiveWebhook({ eventId, providerTransactionId, status });
@@ -89,7 +78,7 @@ const paymentWebhook = asyncHandler(async (req, res) => {
         success: true,
         message: 'Event accepted; processing failed and a retry has been scheduled',
       });
-    default: // 'in_progress'
+    default:
       return res.status(202).json({
         success: true,
         message: 'Event already received; processing or retry is in progress',

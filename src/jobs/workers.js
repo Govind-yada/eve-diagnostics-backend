@@ -6,10 +6,7 @@ const { processStoredEvent, markDead } = require('../services/webhookService');
 const { reconcile } = require('./reconcile');
 
 function startWorkers() {
-  // BullMQ does not close connections it did not create, so we own and close them.
   const connections = [createBullConnection(), createBullConnection()];
-  // Retries a stored webhook event. Throwing makes BullMQ back off and retry;
-  // once attempts run out the event is dead-lettered for manual follow-up.
   const webhookWorker = new Worker(
     WEBHOOK_QUEUE,
     async (job) => { await processStoredEvent(job.data.eventId); },

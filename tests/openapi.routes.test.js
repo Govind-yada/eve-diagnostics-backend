@@ -7,7 +7,6 @@ for (const [path, item] of Object.entries(spec.paths)) {
   for (const m of METHODS) if (item[m]) documented.push(`${m.toUpperCase()} /api${path}`);
 }
 
-// Walks Express 4's router stack to list every real /api route.
 function mountPath(layer) {
   const m = layer.regexp.source.match(/^\^\\\/(.*?)\\\/\?\(\?=\\\/\|\$\)/);
   return m ? `/${m[1].replace(/\\\//g, '/')}` : '';

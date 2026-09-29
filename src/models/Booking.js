@@ -7,7 +7,6 @@ const BOOKING_STATUS = Object.freeze({
   CANCELLED: 'CANCELLED',
 });
 
-// Terminal states cannot transition to anything else.
 const TERMINAL_STATES = [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.CANCELLED];
 
 const bookingSchema = new mongoose.Schema(
@@ -16,8 +15,7 @@ const bookingSchema = new mongoose.Schema(
     test: { type: mongoose.Schema.Types.ObjectId, ref: 'DiagnosticTest', required: true },
     centre: { type: mongoose.Schema.Types.ObjectId, ref: 'Centre', required: true },
     appointmentDate: { type: Date, required: true },
-    // Snapshot of the test price at booking time, so later price changes at the
-    // centre don't retroactively change what a user already booked at.
+
     amount: { type: Number, required: true, min: 0 },
     status: {
       type: String,

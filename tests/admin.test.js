@@ -1,8 +1,6 @@
 const { app, request, registerAndLogin, createCentreWithTest, createBooking } = require('./helpers');
 const User = require('../src/models/User');
 
-// The auth middleware loads the user from the DB on every request, so
-// promoting a user in the DB takes effect for their existing token.
 async function adminToken() {
   const { token, user } = await registerAndLogin();
   await User.updateOne({ _id: user._id }, { role: 'admin' });

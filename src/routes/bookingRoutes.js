@@ -11,7 +11,7 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.use(protect); // every booking route requires authentication
+router.use(protect);
 
 router.post('/', createBookingValidator, validate, createBooking);
 

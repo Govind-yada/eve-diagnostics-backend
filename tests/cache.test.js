@@ -1,5 +1,4 @@
-// Integration tests against a REAL Redis. Skipped automatically unless
-// REDIS_TEST_URL is set (e.g. REDIS_TEST_URL=redis://127.0.0.1:6379 npm test).
+
 const { app, request, registerAndLogin, createCentreWithTest, createBooking } = require('./helpers');
 const { getRedis, initRedis, closeRedis } = require('../src/config/redis');
 const User = require('../src/models/User');

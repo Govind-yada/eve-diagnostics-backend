@@ -3,12 +3,8 @@ const logger = require('../utils/logger');
 
 let client = null;
 
-// Redis is OPTIONAL. Without REDIS_URL the cache is a no-op and background
-// jobs are disabled — the API keeps working exactly as before.
 const isRedisConfigured = () => Boolean(process.env.REDIS_URL);
 
-// Shared client used for caching. Commands fail fast (no offline queue) when
-// Redis is unreachable so a Redis outage can never slow down or break requests.
 function getRedis() {
   if (!isRedisConfigured()) return null;
   if (!client) {
@@ -22,7 +18,6 @@ function getRedis() {
   return client;
 }
 
-// Resolves once the cache connection is ready (or after timeoutMs, whichever first).
 async function initRedis(timeoutMs = 2000) {
   const redis = getRedis();
   if (!redis || redis.status === 'ready') return redis;
@@ -33,7 +28,6 @@ async function initRedis(timeoutMs = 2000) {
   return redis;
 }
 
-// BullMQ requires its own connections with maxRetriesPerRequest: null.
 function createBullConnection() {
   return new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
 }

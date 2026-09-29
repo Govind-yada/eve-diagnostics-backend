@@ -9,7 +9,6 @@ function signToken(user) {
   });
 }
 
-// POST /api/auth/signup
 const signup = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -24,7 +23,6 @@ const signup = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: { user, token } });
 });
 
-// POST /api/auth/login
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -38,7 +36,6 @@ const login = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: { user, token } });
 });
 
-// GET /api/auth/me
 const me = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: { user: req.user } });
 });

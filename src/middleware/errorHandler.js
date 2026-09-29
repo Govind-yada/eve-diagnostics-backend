@@ -1,14 +1,12 @@
 const ApiError = require('../utils/ApiError');
 const logger = require('../utils/logger');
 
-// 404 handler for unmatched routes.
+
 function notFound(req, res, next) {
   next(new ApiError(404, `Route not found: ${req.method} ${req.originalUrl}`));
 }
 
-// Normalizes known Mongoose errors into ApiError-shaped responses, then
-// sends a consistent JSON error envelope for everything else.
-function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
+function errorHandler(err, req, res, next) {
   let error = err;
 
   if (err.name === 'CastError') {

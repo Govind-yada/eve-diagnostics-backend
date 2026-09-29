@@ -3,7 +3,6 @@ const ApiError = require('../utils/ApiError');
 const Booking = require('../models/Booking');
 const DiagnosticTest = require('../models/DiagnosticTest');
 
-// POST /api/bookings
 const createBooking = asyncHandler(async (req, res) => {
   const { testId, appointmentDate } = req.body;
 
@@ -17,14 +16,13 @@ const createBooking = asyncHandler(async (req, res) => {
     test: test._id,
     centre: test.centre,
     appointmentDate,
-    amount: test.price, // snapshot price at booking time
+    amount: test.price,
     status: Booking.STATUS.PENDING,
   });
 
   res.status(201).json({ success: true, data: { booking } });
 });
 
-// GET /api/bookings/me?page=1&limit=10&status=PENDING
 const listMyBookings = asyncHandler(async (req, res) => {
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
@@ -49,7 +47,6 @@ const listMyBookings = asyncHandler(async (req, res) => {
   });
 });
 
-// GET /api/bookings/:id
 const getBooking = asyncHandler(async (req, res) => {
   const booking = await Booking.findById(req.params.id)
     .populate('test', 'name price')
@@ -65,7 +62,7 @@ const getBooking = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: { booking } });
 });
 
-// PATCH /api/bookings/:id/cancel
+
 const cancelBooking = asyncHandler(async (req, res) => {
   const booking = await Booking.findById(req.params.id);
   if (!booking) throw new ApiError(404, 'Booking not found');

@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 
-// A "test" is offered by a specific centre at a specific price, so the same
-// logical test (e.g. "CBC") can be priced differently at different centres.
 const diagnosticTestSchema = new mongoose.Schema(
   {
     centre: { type: mongoose.Schema.Types.ObjectId, ref: 'Centre', required: true, index: true },

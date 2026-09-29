@@ -7,8 +7,6 @@ const MAINTENANCE_QUEUE = 'maintenance';
 
 let queues = null;
 
-// Queues exist only when Redis is configured. Callers treat `null`/`false`
-// as "no background processing available" and fall back to inline behaviour.
 function getQueues() {
   if (!isRedisConfigured()) return null;
   if (!queues) {
@@ -21,10 +19,6 @@ function getQueues() {
   }
   return queues;
 }
-
-// Schedules a server-side retry with exponential backoff. Returns true if the
-// job was accepted, false if there is no queue (or Redis rejected it).
-// jobId = eventId so scheduling the same event twice never creates two jobs.
 async function enqueueWebhookRetry(eventId) {
   const q = getQueues();
   if (!q) return false;
@@ -47,7 +41,6 @@ async function enqueueWebhookRetry(eventId) {
   }
 }
 
-// Repeating housekeeping job (see reconcile.js). Upserting makes this idempotent across restarts.
 async function scheduleReconciliation() {
   const q = getQueues();
   if (!q) return false;
