@@ -1,0 +1,46 @@
+services:
+  mongo:
+    image: mongo:6
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://mongo:27017/eve_diagnostics
+      REDIS_URL: redis://redis:6379   # remove this line to run without caching/jobs
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-long-random-secret}
+      JWT_EXPIRES_IN: 1d
+      PAYMENT_SUCCESS_RATE: 0.8
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
